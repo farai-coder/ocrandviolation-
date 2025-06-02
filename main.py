@@ -22,14 +22,17 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-# Serve Static Files (Frontend)
-build_path = os.path.join(os.path.dirname(__file__), "build")
-app.mount("/static", StaticFiles(directory=os.path.join(build_path, "static")), name="static")
+# 1. Point to your dist directory (where index.html, assets/, and _redirects live).
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DIST_DIR = os.path.join(BASE_DIR, "dist")
 
-# Serve the index.html at root
-@app.get("/{full_path:path}")
-async def serve_frontend(full_path: str):
-    index_path = os.path.join(build_path, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"error": "index.html not found"}
+# 2. Mount the entire dist folder at "/" so:
+#    • "/index.html" → dist/index.html
+#    • "/assets/... " → dist/assets/...
+#    • "/_redirects" → dist/_redirects
+#    • any other path (e.g. "/dashboard") not found in dist/ serves index.html
+app.mount(
+    "/",
+    StaticFiles(directory=DIST_DIR, html=True),
+    name="static",
+)
