@@ -4,3 +4,5 @@ python-multipart
 pillow
 transformers
 torch
+sqlalchemy
+sqlalchemy-utils

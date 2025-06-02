@@ -1,45 +1,35 @@
-from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.responses import JSONResponse
-from PIL import Image
-from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-import io
-import datetime
+from fastapi import FastAPI
+from router import router as violations
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI()
 
-# Load OCR model and processor
-processor = TrOCRProcessor.from_pretrained("microsoft/trocr-small-printed")
-model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-small-printed")
+app.include_router(violations, prefix="/violations", tags=["Violations"])
 
-# Store the OCR results in memory (in real apps, use a database)
-ocr_results = []
+# add CORS middleware 
 
-@app.post("/ocr/")
-async def perform_ocr(
-    image: UploadFile = File(...),
-    timestamp: str = Form(...)
-):
-    if image.content_type != "image/jpeg":
-        return JSONResponse(status_code=400, content={"error": "Only JPG images are allowed."})
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
-    contents = await image.read()
-    image_pil = Image.open(io.BytesIO(contents)).convert("RGB")
+# Serve Static Files (Frontend)
+build_path = os.path.join(os.path.dirname(__file__), "build")
+app.mount("/static", StaticFiles(directory=os.path.join(build_path, "static")), name="static")
 
-    # Run OCR
-    pixel_values = processor(images=image_pil, return_tensors="pt").pixel_values
-    generated_ids = model.generate(pixel_values)
-    extracted_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-
-    # Save result
-    ocr_result = {
-        "timestamp": timestamp,
-        "text": extracted_text
-    }
-    ocr_results.append(ocr_result)
-
-    return {"message": "OCR complete", "text": extracted_text}
-
-
-@app.get("/texts/")
-async def get_texts():
-    return ocr_results
+# Serve the index.html at root
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    index_path = os.path.join(build_path, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "index.html not found"}
