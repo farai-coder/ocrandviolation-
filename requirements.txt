@@ -2,8 +2,8 @@ fastapi
 uvicorn
 python-multipart
 pillow
-transformers
-torch
+transformers==4.38.2
+torch==2.2.0
 sqlalchemy
 sqlalchemy-utils
 protobuf
