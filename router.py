@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, Depends
 from fastapi.responses import JSONResponse
 from PIL import Image
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
@@ -8,7 +8,7 @@ import datetime
 from models import Violation
 from fastapi import APIRouter
 from database import SessionLocal
-from sqlalchemy.orm import Session, Depends
+from sqlalchemy.orm import Session
 # Load OCR model and processor
 processor = TrOCRProcessor.from_pretrained("microsoft/trocr-small-printed")
 model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-small-printed")
